@@ -35,7 +35,7 @@ export interface GeminiResponse {
 }
 
 /**
- * Generate content using Gemini AI
+ * Generate content using Gemini AI with improved error handling
  */
 export async function generateContent(
   prompt: string,
@@ -81,15 +81,59 @@ export async function generateContent(
     
     const response = await result.response;
     
-    // Check for safety feedback
+    // 1) Check for INPUT blocked (prompt feedback)
     if (response.promptFeedback?.blockReason) {
-      throw new Error(`Response blocked: ${response.promptFeedback.blockReason}`);
+      if (response.promptFeedback.blockReason === "SAFETY") {
+        return {
+          text: 'I apologize, but your request contains content that cannot be processed. Please rephrase your question in a general, educational way.',
+          error: 'PROHIBITED_CONTENT'
+        };
+      }
+      return {
+        text: 'I apologize, but your request was blocked. Please try rephrasing your question.',
+        error: response.promptFeedback.blockReason
+      };
     }
-    
+
+    // 2) Check for OUTPUT blocked (candidates)
+    const candidate = response.candidates?.[0];
+    if (!candidate) {
+      return {
+        text: 'I apologize, but I could not generate a response. Please try asking something else.',
+        error: 'NO_CANDIDATE'
+      };
+    }
+
+    if (candidate.finishReason === "SAFETY") {
+      // Try with a safer reformulation
+      const saferResult = await geminiModel.generateContent({
+        contents: [{
+          role: "user",
+          parts: [{ text: `Please provide a general, educational response to this topic without explicit details: ${prompt}` }]
+        }],
+        safetySettings
+      });
+      
+      const saferResponse = await saferResult.response;
+      const saferText = saferResponse.text();
+      
+      if (saferText) {
+        return { text: saferText };
+      } else {
+        return {
+          text: 'I apologize, but I cannot provide a response to that request. Please try asking something more general.',
+          error: 'OUTPUT_BLOCKED'
+        };
+      }
+    }
+
     const text = response.text();
     
     if (!text) {
-      throw new Error('Empty response received');
+      return {
+        text: 'I apologize, but I received an empty response. Please try asking something else.',
+        error: 'Empty response'
+      };
     }
 
     return { text };
