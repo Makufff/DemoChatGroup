@@ -1,0 +1,80 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Project Overview
+This is a **Next.js 15 Webapp** called **ChatGroup AI with Director**.  
+The app allows a user to chat with multiple AI characters in one room.  
+Each character has:
+- `name` (string)
+- `description` (string)
+
+When chatting, a **Director Agent** will decide **which character should reply** based on the question/context.
+
+Chat is **multimodal** using `gemini-2.5-flash` from Google GenAI, which supports both image and text.
+
+---
+
+# Features
+1. **Landing Page**
+   - Center title
+   - Chat preview below (if no chat started → show character cards)
+2. **Chat Room**
+   - Normal chat interface
+   - Top-right: "Add Character" button
+   - Selecting a character enters the chat with that character in the group
+   - Director Agent decides who replies
+3. **Persistent Chat History**
+   - Stored in memory (JavaScript object in app state) to allow continuous conversation
+
+---
+
+# Tech Stack
+- Frontend: Next.js 15 + TailwindCSS
+- AI API: `@google/genai` (Gemini 2.5 Flash)
+- State: React Context or Zustand for chat state
+- Persistent in-memory storage for chat history
+
+---
+
+# API Example
+```ts
+import { GoogleGenAI } from "@google/genai";
+
+async function main() {
+  const ai = new GoogleGenAI({});
+  const imageUrl = "https://goo.gle/instrument-img";
+  const imageBuffer = await fetch(imageUrl).then(r => r.arrayBuffer());
+  const base64ImageData = Buffer.from(imageBuffer).toString('base64');
+
+  const result = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      { inlineData: { mimeType: 'image/jpeg', data: base64ImageData } },
+      { text: "Caption this image." }
+    ],
+  });
+  console.log(result.text);
+}
+
+# Memory Structure Example
+
+```ts
+interface ChatHistory {
+  [roomId: string]: {
+    characters: { name: string; description: string }[];
+    messages: { role: "user" | "assistant" | "director"; content: string; time: string }[];
+  };
+}
+```
+
+Development Guidelines
+
+    Follow functional component pattern with TypeScript
+
+    Keep components modular and small
+
+    Avoid mock data; use actual working APIs
+
+    Make Director logic a separate module for scalability

@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Coding Rules
+1. Must use Next.js 15 app router
+2. Must use TypeScript
+3. TailwindCSS for styling
+4. No inline CSS except for quick testing
+5. No mock implementations — all code must be functional
+
+# Context Engineering Rules
+- Always respect project structure from `context.mdc`
+- Always maintain state consistency for chat history
+- When implementing Director logic, use a clear decision-making algorithm
+- Director must NOT overwrite existing messages
+- Always integrate Gemini API in real usage, not mock
+
+# Commit Rules
+- Commit messages must follow: `feat:`, `fix:`, `refactor:`, `chore:`
+- No generated code without explanation
+
+# Prohibited
+- No hardcoding sensitive API keys
+- No unrelated package installations
+- No deletion of `context.mdc` or `rules.mdc`
