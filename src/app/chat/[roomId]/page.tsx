@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chatStore';
 import ChatMessage from '@/components/ChatMessage';
@@ -8,11 +8,17 @@ import MessageInput from '@/components/MessageInput';
 import CharacterSelector from '@/components/CharacterSelector';
 import ExportChat from '@/components/ExportChat';
 
+interface ReplyInfo {
+  messageId: string;
+  content: string;
+}
+
 export default function ChatRoom() {
   const params = useParams();
   const router = useRouter();
   const roomId = params.roomId as string;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [replyTo, setReplyTo] = useState<ReplyInfo | null>(null);
   
   const { 
     rooms, 
@@ -47,8 +53,17 @@ export default function ChatRoom() {
     );
   }
 
-  const handleSendMessage = async (content: string, imageFile?: File) => {
-    await sendMessage(roomId, content, imageFile);
+  const handleSendMessage = async (content: string, imageFile?: File, replyInfo?: ReplyInfo) => {
+    await sendMessage(roomId, content, imageFile, replyInfo);
+    setReplyTo(null); // Clear reply after sending
+  };
+
+  const handleReply = (messageId: string, content: string) => {
+    setReplyTo({ messageId, content });
+  };
+
+  const handleCancelReply = () => {
+    setReplyTo(null);
   };
 
   return (
@@ -107,6 +122,9 @@ export default function ChatRoom() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               📷 You can also share images for analysis!
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              💬 Click the reply button on any message to reply directly!
+            </p>
           </div>
         ) : (
           currentRoom.messages.map((message) => (
@@ -114,6 +132,7 @@ export default function ChatRoom() {
               key={message.id}
               message={message}
               character={currentRoom.characters.find(c => c.id === message.characterId)}
+              onReply={handleReply}
             />
           ))
         )}
@@ -130,7 +149,12 @@ export default function ChatRoom() {
 
       {/* Message Input */}
       <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-        <MessageInput onSendMessage={handleSendMessage} disabled={isLoading} />
+        <MessageInput 
+          onSendMessage={handleSendMessage} 
+          disabled={isLoading}
+          replyTo={replyTo}
+          onCancelReply={handleCancelReply}
+        />
       </div>
     </div>
   );

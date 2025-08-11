@@ -12,6 +12,8 @@ export interface Message {
   timestamp: string;
   characterId?: string; // For assistant messages
   imageUrl?: string; // For multimodal content
+  replyTo?: string; // ID of the message being replied to
+  replyToContent?: string; // Content of the message being replied to (for display)
 }
 
 export interface ChatHistory {

@@ -5,191 +5,197 @@ export interface DirectorContext {
   characters: Character[];
   messages: Message[];
   currentUserMessage: string;
+  replyTo?: string; // Add replyTo to context
 }
 
-export interface DirectorResponse {
+export interface DirectorDecision {
   shouldMultipleRespond: boolean;
   selectedCharacters: Character[];
   reason: string;
 }
 
 /**
- * Director Agent - Decides which character should reply based on context
+ * AI Director Agent for character selection
  */
 export class DirectorAgent {
   private static readonly DIRECTOR_PROMPT = `
-You are a Director Agent managing a group chat with multiple AI characters. Your job is to decide which character(s) should respond to the user's message.
+You are an AI Director managing a group chat with multiple AI characters. Your job is to decide which character(s) should respond to the user's message.
 
 Available characters:
 {CHARACTERS}
 
-Recent conversation context:
-{CONTEXT}
+Recent conversation context (last 5 messages):
+{CONVERSATION_CONTEXT}
 
 User's message: "{USER_MESSAGE}"
 
-Analyze the user's message and decide who should respond. Consider:
-1. If the user asks for "everyone's opinion", "all thoughts", "what do you all think", etc. → ALL characters should respond
-2. If the user asks a specific question that matches one character's expertise → that character should respond
-3. If the user asks a general question → choose the most suitable character
-4. If multiple characters have relevant expertise → choose the most appropriate one
+{REPLY_CONTEXT}
 
-IMPORTANT: Respond with ONLY a JSON object, no markdown formatting, no code blocks, no explanations outside the JSON. Keep responses family-friendly and educational.
-
+Instructions:
+1. Analyze the user's message and conversation context
+2. Consider each character's expertise, personality, and relevance to the topic
+3. Decide if one character or multiple characters should respond
+4. Keep responses family-friendly and educational
+5. Respond with ONLY a JSON object in this exact format:
 {
   "shouldMultipleRespond": true/false,
-  "selectedCharacterIds": ["id1", "id2"] or ["id1"],
-  "reason": "brief explanation of the decision"
+  "selectedCharacterIds": ["id1", "id2"],
+  "reason": "Brief explanation of your decision"
 }
 
-If shouldMultipleRespond is true, include ALL character IDs. If false, include only ONE character ID.
-`;
+Rules:
+- If the user asks a general question or "what do you all think", have multiple characters respond
+- If the question is specific to one character's expertise, have only that character respond
+- If the user is replying to a specific character's message, have that character respond
+- Keep the reason concise and clear
 
-  /**
-   * Clean response text to extract JSON
-   */
-  private static cleanResponseText(text: string): string {
-    // Remove markdown code blocks
-    let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-    
-    // Remove any text before the first {
-    const jsonStart = cleaned.indexOf('{');
-    if (jsonStart > 0) {
-      cleaned = cleaned.substring(jsonStart);
-    }
-    
-    // Remove any text after the last }
-    const jsonEnd = cleaned.lastIndexOf('}');
-    if (jsonEnd >= 0 && jsonEnd < cleaned.length - 1) {
-      cleaned = cleaned.substring(0, jsonEnd + 1);
-    }
-    
-    return cleaned.trim();
-  }
+Respond with ONLY the JSON object:
+`;
 
   /**
    * Decide which character(s) should respond
    */
-  static async decideResponse(context: DirectorContext): Promise<DirectorResponse> {
+  static async decideResponse(context: DirectorContext): Promise<DirectorDecision> {
     try {
-      const prompt = this.buildPrompt(context);
+      // Check if this is a reply to a specific character
+      if (context.replyTo) {
+        const repliedMessage = context.messages.find(msg => msg.id === context.replyTo);
+        if (repliedMessage && repliedMessage.characterId) {
+          const repliedCharacter = context.characters.find(char => char.id === repliedMessage.characterId);
+          if (repliedCharacter) {
+            return {
+              shouldMultipleRespond: false,
+              selectedCharacters: [repliedCharacter],
+              reason: `User is replying to ${repliedCharacter.name}'s message, so ${repliedCharacter.name} should respond.`
+            };
+          }
+        }
+      }
+
+      // Normal decision logic for non-reply messages
+      const prompt = this.buildDirectorPrompt(context);
       const response = await generateContent(prompt);
       
       if (response.error) {
         console.error('Director decision error:', response.error);
-        return this.fallbackDecision(context);
-      }
-
-      try {
-        const cleanedText = this.cleanResponseText(response.text);
-        const decision = JSON.parse(cleanedText) as {
-          shouldMultipleRespond: boolean;
-          selectedCharacterIds: string[];
-          reason: string;
+        // Fallback: select first character
+        return {
+          shouldMultipleRespond: false,
+          selectedCharacters: context.characters.slice(0, 1),
+          reason: 'Fallback: Using first available character due to error'
         };
-        
-        // Validate the decision
-        if (this.isValidDecision(decision, context.characters)) {
-          const selectedCharacters = context.characters.filter(char => 
-            decision.selectedCharacterIds.includes(char.id)
-          );
-          
-          return {
-            shouldMultipleRespond: decision.shouldMultipleRespond,
-            selectedCharacters,
-            reason: decision.reason
-          };
-        }
-      } catch (parseError) {
-        console.error('Failed to parse director decision:', parseError);
-        console.error('Raw response:', response.text);
       }
 
-      return this.fallbackDecision(context);
+      const decision = this.parseDirectorResponse(response.text);
+      
+      // Validate and find the selected characters
+      const selectedCharacters = context.characters.filter(char => 
+        decision.selectedCharacterIds.includes(char.id)
+      );
+
+      if (selectedCharacters.length === 0) {
+        // Fallback: select first character
+        return {
+          shouldMultipleRespond: false,
+          selectedCharacters: context.characters.slice(0, 1),
+          reason: 'Fallback: No valid characters selected, using first available'
+        };
+      }
+
+      return {
+        shouldMultipleRespond: decision.shouldMultipleRespond,
+        selectedCharacters,
+        reason: decision.reason
+      };
+
     } catch (error) {
-      console.error('Director decision failed:', error);
-      return this.fallbackDecision(context);
+      console.error('Director decision error:', error);
+      // Fallback: select first character
+      return {
+        shouldMultipleRespond: false,
+        selectedCharacters: context.characters.slice(0, 1),
+        reason: 'Fallback: Error in director decision, using first available character'
+      };
     }
   }
 
   /**
-   * Build the prompt for the director
+   * Build director prompt
    */
-  private static buildPrompt(context: DirectorContext): string {
-    const charactersText = context.characters
+  private static buildDirectorPrompt(context: DirectorContext): string {
+    const characterList = context.characters
       .map(char => `- ${char.name} (ID: ${char.id}): ${char.description}`)
       .join('\n');
 
     const recentMessages = context.messages
-      .slice(-5) // Last 5 messages for context
-      .map(msg => `${msg.role === 'user' ? 'User' : 'Character'}: ${msg.content}`)
+      .slice(-5)
+      .map(msg => {
+        if (msg.role === 'user') {
+          return `User: ${msg.content}`;
+        } else if (msg.role === 'assistant' && msg.characterId) {
+          const character = context.characters.find(c => c.id === msg.characterId);
+          return `${character?.name || 'Unknown'}: ${msg.content}`;
+        }
+        return '';
+      })
+      .filter(Boolean)
       .join('\n');
 
-    return this.DIRECTOR_PROMPT
-      .replace('{CHARACTERS}', charactersText)
-      .replace('{CONTEXT}', recentMessages || 'No recent messages')
-      .replace('{USER_MESSAGE}', context.currentUserMessage);
-  }
-
-  /**
-   * Validate the director's decision
-   */
-  private static isValidDecision(decision: unknown, characters: Character[]): boolean {
-    if (typeof decision !== 'object' || decision === null) return false;
-    
-    const d = decision as Record<string, unknown>;
-    
-    return (
-      'shouldMultipleRespond' in d &&
-      'selectedCharacterIds' in d &&
-      'reason' in d &&
-      typeof d.shouldMultipleRespond === 'boolean' &&
-      Array.isArray(d.selectedCharacterIds) &&
-      typeof d.reason === 'string' &&
-      (d.selectedCharacterIds as string[]).length > 0 &&
-      (d.selectedCharacterIds as string[]).every((id: string) => 
-        characters.some(char => char.id === id)
-      )
-    );
-  }
-
-  /**
-   * Fallback decision when AI fails
-   */
-  private static fallbackDecision(context: DirectorContext): DirectorResponse {
-    // Check if user is asking for everyone's opinion
-    const userMessage = context.currentUserMessage.toLowerCase();
-    const groupKeywords = ['everyone', 'all', 'everybody', 'what do you all think', 'all thoughts', 'everyone\'s opinion'];
-    
-    const isGroupQuestion = groupKeywords.some(keyword => userMessage.includes(keyword));
-    
-    if (isGroupQuestion) {
-      return {
-        shouldMultipleRespond: true,
-        selectedCharacters: context.characters,
-        reason: 'User asked for everyone\'s opinion'
-      };
+    // Add reply context if this is a reply
+    let replyContext = '';
+    if (context.replyTo) {
+      const repliedMessage = context.messages.find(msg => msg.id === context.replyTo);
+      if (repliedMessage && repliedMessage.characterId) {
+        const repliedCharacter = context.characters.find(char => char.id === repliedMessage.characterId);
+        replyContext = `\n\nIMPORTANT: The user is replying to a message from ${repliedCharacter?.name || 'Unknown'}. ${repliedCharacter?.name || 'This character'} should respond to maintain conversation continuity.`;
+      }
     }
 
-    // Default to first character
-    return {
-      shouldMultipleRespond: false,
-      selectedCharacters: [context.characters[0]],
-      reason: 'Fallback selection: first character'
-    };
+    return this.DIRECTOR_PROMPT
+      .replace('{CHARACTERS}', characterList)
+      .replace('{CONVERSATION_CONTEXT}', recentMessages || 'No recent messages')
+      .replace('{USER_MESSAGE}', context.currentUserMessage)
+      .replace('{REPLY_CONTEXT}', replyContext);
   }
 
   /**
-   * Check if message is asking for group response
+   * Parse director response
    */
-  static isGroupQuestion(message: string): boolean {
-    const lowerMessage = message.toLowerCase();
-    const groupKeywords = [
-      'everyone', 'all', 'everybody', 'what do you all think', 
-      'all thoughts', 'everyone\'s opinion', 'what do you think',
-      'all of you', 'everyone here', 'group opinion'
-    ];
+  private static parseDirectorResponse(responseText: string): {
+    shouldMultipleRespond: boolean;
+    selectedCharacterIds: string[];
+    reason: string;
+  } {
+    try {
+      // Clean the response text
+      const cleanedText = this.cleanResponseText(responseText);
+      const decision = JSON.parse(cleanedText);
+      
+      return {
+        shouldMultipleRespond: decision.shouldMultipleRespond || false,
+        selectedCharacterIds: decision.selectedCharacterIds || [],
+        reason: decision.reason || 'No reason provided'
+      };
+    } catch (error) {
+      console.error('Failed to parse director response:', error);
+      console.error('Raw response:', responseText);
+      throw new Error('Invalid director response format');
+    }
+  }
+
+  /**
+   * Clean response text by removing markdown and extra text
+   */
+  private static cleanResponseText(text: string): string {
+    // Remove markdown code blocks
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
     
-    return groupKeywords.some(keyword => lowerMessage.includes(keyword));
+    // Find the JSON object
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return jsonMatch[0];
+    }
+    
+    return cleaned.trim();
   }
 } 

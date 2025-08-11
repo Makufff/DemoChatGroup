@@ -6,7 +6,7 @@ import { generateContent } from '@/lib/gemini';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roomId, userMessage, characters, messages, imageData } = body;
+    const { roomId, userMessage, characters, messages, imageData, replyTo } = body;
 
     if (!roomId || (!userMessage && !imageData) || !characters || !Array.isArray(characters)) {
       return NextResponse.json(
@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
     const context: DirectorContext = {
       characters,
       messages: messages || [],
-      currentUserMessage: userMessage || 'Please analyze this image'
+      currentUserMessage: userMessage || 'Please analyze this image',
+      replyTo
     };
 
     // Get director's decision (behind the scenes)
@@ -71,7 +72,8 @@ Respond naturally as ${character.name}:`;
           characterResponse = await CharacterAI.generateResponse(
             character,
             userMessage,
-            messages || []
+            messages || [],
+            replyTo
           );
         }
 
@@ -130,7 +132,8 @@ Respond naturally as ${selectedCharacter.name}:`;
         characterResponse = await CharacterAI.generateResponse(
           selectedCharacter,
           userMessage,
-          messages || []
+          messages || [],
+          replyTo
         );
       }
 

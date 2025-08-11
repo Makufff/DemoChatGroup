@@ -40,10 +40,11 @@ Respond naturally as {CHARACTER_NAME}:
   static async generateResponse(
     character: Character,
     userMessage: string,
-    conversationContext: Message[]
+    conversationContext: Message[],
+    replyTo?: string
   ): Promise<CharacterResponse> {
     try {
-      const prompt = this.buildCharacterPrompt(character, userMessage, conversationContext);
+      const prompt = this.buildCharacterPrompt(character, userMessage, conversationContext, replyTo);
       const response = await generateContent(prompt);
       
       if (response.error) {
@@ -95,7 +96,8 @@ Respond naturally as {CHARACTER_NAME}:
   private static buildCharacterPrompt(
     character: Character,
     userMessage: string,
-    conversationContext: Message[]
+    conversationContext: Message[],
+    replyTo?: string
   ): string {
     const recentMessages = conversationContext
       .slice(-10) // Last 10 messages for context
@@ -112,11 +114,23 @@ Respond naturally as {CHARACTER_NAME}:
       .filter(Boolean)
       .join('\n');
 
+    // Find the message being replied to
+    let replyContext = '';
+    if (replyTo) {
+      const repliedMessage = conversationContext.find(msg => msg.id === replyTo);
+      if (repliedMessage) {
+        const repliedCharacter = repliedMessage.characterId 
+          ? conversationContext.find(msg => msg.id === repliedMessage.characterId)?.characterId || 'Unknown'
+          : 'User';
+        replyContext = `\n\nNote: The user is specifically replying to this message:\n${repliedCharacter}: ${repliedMessage.content}\n\nPlease acknowledge this context in your response.`;
+      }
+    }
+
     return this.CHARACTER_PROMPT_TEMPLATE
       .replace('{CHARACTER_NAME}', character.name)
       .replace('{CHARACTER_DESCRIPTION}', character.description)
       .replace('{CONVERSATION_CONTEXT}', recentMessages || 'No recent messages')
-      .replace('{USER_MESSAGE}', userMessage);
+      .replace('{USER_MESSAGE}', userMessage) + replyContext;
   }
 
   /**

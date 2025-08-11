@@ -12,7 +12,7 @@ interface ChatStore extends ChatState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   // AI Response actions
-  sendMessage: (roomId: string, content: string, imageFile?: File) => Promise<void>;
+  sendMessage: (roomId: string, content: string, imageFile?: File, replyTo?: { messageId: string; content: string }) => Promise<void>;
 }
 
 interface CharacterResponse {
@@ -120,7 +120,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   // AI Response actions
-  sendMessage: async (roomId, content, imageFile) => {
+  sendMessage: async (roomId, content, imageFile, replyTo) => {
     const state = get();
     const room = state.rooms[roomId];
     
@@ -144,11 +144,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
     }
 
-    // Add user message
+    // Add user message with reply info
     get().addMessage(roomId, {
       role: 'user',
       content: content || (imageFile ? '📷 [Image]' : ''),
       imageUrl: imageFile ? URL.createObjectURL(imageFile) : undefined,
+      replyTo: replyTo?.messageId,
+      replyToContent: replyTo?.content,
     });
 
     // Set loading state
@@ -167,6 +169,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           characters: room.characters,
           messages: room.messages,
           imageData,
+          replyTo: replyTo?.messageId, // Include reply info in API call
         }),
       });
 

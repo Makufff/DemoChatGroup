@@ -1,34 +1,40 @@
-# ChatGroup AI with Director
+# 🎭 ChatGroup AI with Director
 
-A Next.js application that allows you to chat with multiple AI characters in one room. The Director Agent automatically decides which character should respond based on your questions and the conversation context.
+A Next.js 15 application that creates an interactive group chat experience with AI characters, powered by Google Gemini 2.5 Flash API and featuring an intelligent Director Agent that orchestrates character responses.
 
-## 🚀 Features
+## ✨ Features
 
-- **Multi-Character Chat**: Chat with multiple AI characters simultaneously
-- **Director Agent**: AI-powered character selection based on context
-- **Gemini 2.5 Flash Integration**: Powered by Google's latest AI model
+### 🤖 **AI Characters**
+- **Multiple AI Characters**: Chat with multiple AI characters simultaneously
+- **Custom Characters**: Create your own AI characters with custom names, descriptions, and avatars
+- **Character Templates**: 5 preset character groups for quick setup
+- **Character Management**: Add/remove characters during conversations
+
+### 🎬 **Director Agent**
+- **Intelligent Routing**: AI Director automatically decides which character(s) should respond
+- **Context Awareness**: Considers conversation history and character expertise
+- **Multi-Response**: Can trigger multiple characters to respond when appropriate
+
+### 💬 **Chat Features**
+- **Real-time Messaging**: Instant AI responses with loading states
+- **Reply System**: Reply directly to specific messages with context awareness
 - **Multimodal Support**: Upload and analyze images with AI characters
-- **Character Templates**: 5 preset character groups (Detective Team, Scientific Minds, Creative Minds, Historical Leaders, Great Thinkers)
-- **Export Functionality**: Export chats in TXT, JSON, or Markdown formats
-- **Responsive Design**: Works on desktop and mobile devices
-- **Dark Mode Support**: Automatic theme switching
+- **Chat Export**: Export conversations in TXT, JSON, or Markdown formats
+- **Persistent History**: Chat history is maintained during the session
 
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: TailwindCSS
-- **State Management**: Zustand
-- **AI Integration**: Google Gemini 2.5 Flash
-- **Image Handling**: Next.js Image component
-
-## 📋 Prerequisites
-
-- Node.js 18+ 
-- npm or pnpm
-- Google GenAI API key
+### 🎨 **User Interface**
+- **Modern Design**: Clean, responsive interface with TailwindCSS
+- **Dark Mode**: Automatic theme switching based on system preference
+- **Mobile Responsive**: Works seamlessly on desktop and mobile devices
+- **Loading States**: Visual feedback during AI processing
 
 ## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- Google Gemini API key
+
+### Installation
 
 1. **Clone the repository**
    ```bash
@@ -39,153 +45,133 @@ A Next.js application that allows you to chat with multiple AI characters in one
 2. **Install dependencies**
    ```bash
    npm install
-   # or
-   pnpm install
    ```
 
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ```env
-   GOOGLE_GENAI_API_KEY=your_google_genai_api_key_here
-   NODE_ENV=development
+   GOOGLE_GENAI_API_KEY=your_gemini_api_key_here
    ```
 
-4. **Get a Google GenAI API key**
-   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create a new API key
-   - Add it to your `.env.local` file
-
-5. **Run the development server**
+4. **Run the development server**
    ```bash
    npm run dev
-   # or
-   pnpm dev
    ```
 
-6. **Open your browser**
+5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🎯 How to Use
 
-1. **Select Characters**: Choose from individual characters or use character templates
-2. **Start Chat**: Click "Start Chat" to create a new chat room
-3. **Send Messages**: Type your message and press Enter or click Send
-4. **Upload Images**: Click the camera icon to upload and analyze images
-5. **Export Chats**: Use the export button to save your conversations
+### Starting a Chat
+1. **Choose Characters**: Select from preset character groups or create custom characters
+2. **Start Chat**: Click on a character to begin a conversation
+3. **Add More Characters**: Use the "Add Character" button to include more AI participants
 
-## 🎭 Character Templates
+### Using Reply Feature
+1. **Find a Message**: Locate the message you want to reply to
+2. **Click Reply**: Click the reply button (↩️) on any message
+3. **Type Reply**: Your reply will be contextualized to that specific message
+4. **Send**: Click "Reply" to send your contextual response
 
-### Detective Team
-- **Sherlock Holmes**: Brilliant detective with deductive reasoning
-- **Dr. Watson**: Medical doctor with practical wisdom
+### Image Analysis
+1. **Upload Image**: Click the camera icon (📷) in the message input
+2. **Add Context**: Optionally add a message describing what you want analyzed
+3. **Send**: AI characters will analyze the image from their unique perspectives
 
-### Scientific Minds
-- **Einstein**: Theoretical physicist and relativity expert
-- **Marie Curie**: Pioneer in radioactivity research
-- **Nikola Tesla**: Inventor and electrical engineer
+### Exporting Chats
+1. **Open Export Menu**: Click the export button in the chat header
+2. **Choose Format**: Select TXT, JSON, or Markdown format
+3. **Download**: Your chat history will be downloaded immediately
 
-### Creative Minds
-- **Shakespeare**: Master playwright and poet
-- **Leonardo da Vinci**: Polymath artist and inventor
-- **Mozart**: Classical composer and musical genius
+## 🏗️ Architecture
 
-### Historical Leaders
-- **Cleopatra**: Last ruler of Ptolemaic Egypt
-- **Julius Caesar**: Roman general and statesman
-- **Joan of Arc**: French heroine and saint
+### Frontend
+- **Next.js 15**: App Router for modern React development
+- **TypeScript**: Type-safe development
+- **TailwindCSS**: Utility-first styling
+- **Zustand**: Lightweight state management
 
-### Great Thinkers
-- **Socrates**: Founder of Western philosophy
-- **Confucius**: Chinese philosopher and politician
-- **Aristotle**: Greek philosopher and polymath
+### Backend
+- **Next.js API Routes**: Server-side API endpoints
+- **Google Gemini 2.5 Flash**: Advanced AI model for character responses
+- **Director Agent**: Custom AI logic for character selection
 
-## 🔧 API Endpoints
+### Key Components
+- `lib/director.ts`: Director Agent logic
+- `lib/characterAI.ts`: Character-specific AI responses
+- `lib/gemini.ts`: Gemini API integration
+- `store/chatStore.ts`: State management
+- `components/`: Reusable UI components
 
-- `POST /api/chat` - Process chat messages and generate AI responses
+## 🎭 Character System
 
-## 📁 Project Structure
+### Preset Character Groups
+1. **Scientists & Thinkers**: Einstein, Marie Curie, Darwin
+2. **Artists & Writers**: Shakespeare, Van Gogh, Mozart
+3. **Historical Figures**: Cleopatra, Napoleon, Gandhi
+4. **Modern Innovators**: Elon Musk, Steve Jobs, Ada Lovelace
+5. **Fantasy Characters**: Wizard, Knight, Dragon
 
+### Custom Characters
+- **Name**: Choose any name for your character
+- **Description**: Define personality, expertise, and background
+- **Avatar**: Select from emoji avatars
+- **Persistence**: Custom characters are saved during the session
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+GOOGLE_GENAI_API_KEY=your_gemini_api_key_here
 ```
-chatgroup/
-├── src/
-│   ├── app/
-│   │   ├── api/chat/route.ts    # Chat API endpoint
-│   │   ├── chat/[roomId]/       # Chat room pages
-│   │   ├── globals.css          # Global styles
-│   │   ├── layout.tsx           # Root layout
-│   │   └── page.tsx             # Home page
-│   ├── components/              # React components
-│   ├── lib/                     # Utility libraries
-│   ├── store/                   # Zustand state management
-│   └── types/                   # TypeScript type definitions
-├── components/                  # Shared components
-├── lib/                         # AI integration libraries
-├── store/                       # State management
-├── types/                       # Type definitions
-└── public/                      # Static assets
-```
 
-## 🎨 Customization
+### API Configuration
+The application uses Google Gemini 2.5 Flash with safety settings configured to minimize content blocking while maintaining appropriate responses.
 
-### Adding New Characters
-Edit the character arrays in:
-- `src/app/page.tsx` (sample characters)
-- `components/CharacterTemplates.tsx` (template characters)
-- `components/CharacterSelector.tsx` (additional characters)
-
-### Modifying AI Behavior
-- `lib/director.ts` - Director Agent logic
-- `lib/characterAI.ts` - Character response generation
-- `lib/gemini.ts` - Gemini API integration
-
-## 🚀 Deployment
-
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
-
-2. **Start the production server**
-   ```bash
-   npm start
-   ```
-
-3. **Deploy to your preferred platform**
-   - Vercel (recommended for Next.js)
-   - Netlify
-   - AWS
-   - Google Cloud Platform
-
-## 🔒 Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GOOGLE_GENAI_API_KEY` | Google GenAI API key | Yes |
-| `NODE_ENV` | Environment (development/production) | No |
+## 📱 Browser Support
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🙏 Acknowledgments
 
-If you encounter any issues:
-1. Check the console for error messages
-2. Verify your API key is correct
-3. Ensure all dependencies are installed
-4. Check the browser's network tab for API errors
-
-## 🎉 Acknowledgments
-
-- Google for providing the Gemini AI API
-- Next.js team for the excellent framework
+- Google Gemini API for AI capabilities
+- Next.js team for the amazing framework
 - TailwindCSS for the utility-first CSS framework
 - Zustand for lightweight state management
+
+## 🐛 Known Issues
+
+- **API Rate Limits**: Free tier Gemini API has rate limits (10 requests/minute)
+- **Content Filtering**: Some responses may be blocked by Gemini's safety filters
+- **Session Persistence**: Chat history is not persisted between browser sessions
+
+## 🔮 Future Enhancements
+
+- [ ] User authentication and chat history persistence
+- [ ] Voice input/output capabilities
+- [ ] Character voice customization
+- [ ] Advanced character creation with image avatars
+- [ ] Chat room sharing and collaboration
+- [ ] Real-time collaboration features
+- [ ] Advanced export options (PDF, HTML)
+- [ ] Character relationship dynamics
+- [ ] Multi-language support
+
+---
+
+**Made with ❤️ using Next.js 15, TypeScript, and Google Gemini AI**
