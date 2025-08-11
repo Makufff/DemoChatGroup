@@ -37,6 +37,13 @@ export default function ExportChat({ room }: ExportChatProps) {
       const timestamp = new Date(message.timestamp).toLocaleString();
       const sender = getMessageSender(message);
       content += `[${timestamp}] ${sender}: ${message.content}\n`;
+      
+      // Add reply context if this is a reply
+      if (message.replyTo && message.replyToContent) {
+        const repliedSender = getRepliedMessageSender(message.replyTo);
+        content += `[Replying to: ${repliedSender}] ${message.replyToContent}\n`;
+      }
+      
       if (message.imageUrl) {
         content += `[Image attached: ${message.imageUrl}]\n`;
       }
@@ -56,11 +63,25 @@ export default function ExportChat({ room }: ExportChatProps) {
     room.messages.forEach((message) => {
       const timestamp = new Date(message.timestamp).toLocaleString();
       const sender = getMessageSender(message);
+      
       content += `### ${timestamp} - ${sender}\n\n`;
+      
+      // Add reply context if this is a reply
+      if (message.replyTo && message.replyToContent) {
+        const repliedSender = getRepliedMessageSender(message.replyTo);
+        content += `> **Replying to:** ${repliedSender}\n`;
+        content += `> ${message.replyToContent}\n\n`;
+      }
+      
+      // Add message content
       content += `${message.content}\n\n`;
+      
+      // Add image if present
       if (message.imageUrl) {
         content += `![Image](${message.imageUrl})\n\n`;
       }
+      
+      content += `---\n\n`;
     });
 
     return content;
@@ -74,6 +95,14 @@ export default function ExportChat({ room }: ExportChatProps) {
       return character ? character.name : 'Assistant';
     }
     return 'Assistant';
+  };
+
+  const getRepliedMessageSender = (replyToId: string): string => {
+    const repliedMessage = room.messages.find(msg => msg.id === replyToId);
+    if (repliedMessage) {
+      return getMessageSender(repliedMessage);
+    }
+    return 'Unknown';
   };
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -136,9 +165,9 @@ export default function ExportChat({ room }: ExportChatProps) {
               </div>
 
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {format === 'txt' && 'Simple text format with timestamps'}
+                {format === 'txt' && 'Simple text format with timestamps and reply info'}
                 {format === 'json' && 'Complete data structure for backup'}
-                {format === 'md' && 'Formatted markdown with images'}
+                {format === 'md' && 'Formatted markdown with images and reply context'}
               </div>
 
               <button
